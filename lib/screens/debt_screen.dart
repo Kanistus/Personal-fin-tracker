@@ -445,6 +445,34 @@ class _DebtScreenState extends State<DebtScreen>
                         ),
                     ],
                   ),
+                  const SizedBox(width: 4),
+                  // Direct Edit button
+                  IconButton(
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    icon: const Icon(Icons.edit_outlined, color: _accentColor, size: 20),
+                    tooltip: 'Edit Debt',
+                    onPressed: () => _showAddDebtSheet(context, debtToEdit: debt),
+                  ),
+                  // Direct Delete button
+                  IconButton(
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    icon: const Icon(Icons.delete_outline_rounded, color: _expenseColor, size: 20),
+                    tooltip: 'Delete Debt',
+                    onPressed: () {
+                      if (debt.id != null) {
+                        provider.deleteDebt(debt.id!);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Deleted debt: ${debt.personName}'),
+                            backgroundColor: _cardColor,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ],
               ),
 

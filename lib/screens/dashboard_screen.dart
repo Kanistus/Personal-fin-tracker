@@ -303,7 +303,7 @@ class DashboardScreen extends StatelessWidget {
             onTap: () => _showTransactionDetailSheet(context, txn, provider),
             child: Container(
               margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: _cardColor,
                 borderRadius: BorderRadius.circular(14),
@@ -323,7 +323,7 @@ class DashboardScreen extends StatelessWidget {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,19 +349,46 @@ class DashboardScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Text(
-                    '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0').format(txn.amount)}',
-                    style: TextStyle(
-                      color: txn.isIncome ? _incomeColor : _expenseColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0').format(txn.amount)}',
+                        style: TextStyle(
+                          color: txn.isIncome ? _incomeColor : _expenseColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: _textSecondary,
-                    size: 20,
+                  const SizedBox(width: 4),
+                  // Direct Edit button
+                  IconButton(
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(6),
+                    icon: const Icon(Icons.edit_outlined, color: _accentColor, size: 20),
+                    tooltip: 'Edit Transaction',
+                    onPressed: () => _showAddTransactionSheet(context, transactionToEdit: txn),
+                  ),
+                  // Direct Delete button
+                  IconButton(
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(6),
+                    icon: const Icon(Icons.delete_outline_rounded, color: _expenseColor, size: 20),
+                    tooltip: 'Delete Transaction',
+                    onPressed: () {
+                      if (txn.id != null) {
+                        provider.deleteTransaction(txn.id!);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Deleted "${txn.title}"'),
+                            backgroundColor: _cardColor,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
