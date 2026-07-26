@@ -1,0 +1,1078 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../models/debt.dart';
+import '../providers/debt_provider.dart';
+
+class DebtScreen extends StatefulWidget {
+  const DebtScreen({super.key});
+
+  @override
+  State<DebtScreen> createState() => _DebtScreenState();
+}
+
+class _DebtScreenState extends State<DebtScreen>
+    with SingleTickerProviderStateMixin {
+  static const Color _bgColor = Color(0xFF0F1B2D);
+  static const Color _cardColor = Color(0xFF1A2940);
+  static const Color _accentColor = Color(0xFF3498DB);
+  static const Color _textPrimary = Color(0xFFECF0F1);
+  static const Color _textSecondary = Color(0xFF8899AA);
+  static const Color _incomeColor = Color(0xFF2ECC71);
+  static const Color _expenseColor = Color(0xFFE74C3C);
+  static const Color _warningColor = Color(0xFFF39C12);
+  static const Color _purpleColor = Color(0xFF9B59B6);
+
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DebtProvider>(context, listen: false).loadDebts();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bgColor,
+      appBar: AppBar(
+        backgroundColor: _bgColor,
+        elevation: 0,
+        title: const Text(
+          'Debts',
+          style: TextStyle(
+            color: _textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+          ),
+        ),
+        centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: _accentColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: _accentColor,
+              unselectedLabelColor: _textSecondary,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'All'),
+                Tab(text: 'They Owe'),
+                Tab(text: 'I Owe'),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Consumer<DebtProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(color: _accentColor),
+            );
+          }
+
+          return Column(
+            children: [
+              const SizedBox(height: 12),
+              // Summary card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildSummaryCard(provider),
+              ),
+              const SizedBox(height: 12),
+
+              // Tab views
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildDebtList(provider.activeDebts, provider),
+                    _buildDebtList(
+                      provider.debtsOwedToMe
+                          .where((d) => !d.isFullyPaid)
+                          .toList(),
+                      provider,
+                    ),
+                    _buildDebtList(
+                      provider.debtsIOwe
+                          .where((d) => !d.isFullyPaid)
+                          .toList(),
+                      provider,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: _accentColor,
+        onPressed: () => _showAddDebtSheet(context),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(DebtProvider provider) {
+    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final net = provider.netPosition;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: net >= 0
+              ? [const Color(0xFF1B4332), const Color(0xFF2D6A4F)]
+              : [const Color(0xFF3D1E1E), const Color(0xFF5C2E2E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (net >= 0 ? _incomeColor : _expenseColor)
+                      .withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  net >= 0
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  color: net >= 0 ? _incomeColor : _expenseColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Net Position',
+                style: TextStyle(color: _textSecondary, fontSize: 14),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            formatter.format(net.abs()),
+            style: TextStyle(
+              color: net >= 0 ? _incomeColor : _expenseColor,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            net >= 0
+                ? 'People owe you more'
+                : 'You owe others more',
+            style: TextStyle(
+              color: _textSecondary.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMiniStat(
+                  'They Owe Me',
+                  formatter.format(provider.totalOwedToMe),
+                  _incomeColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMiniStat(
+                  'I Owe Them',
+                  formatter.format(provider.totalIOwe),
+                  _expenseColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMiniStat(
+                  'Settled',
+                  '${provider.settledDebts.length}',
+                  _purpleColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: _textSecondary.withValues(alpha: 0.8),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDebtList(List<Debt> debts, DebtProvider provider) {
+    if (debts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.handshake_rounded,
+                color: _textSecondary.withValues(alpha: 0.4), size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'No active debts',
+              style: TextStyle(color: _textSecondary, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Tap + to add a debt entry',
+              style: TextStyle(color: _textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+      itemCount: debts.length,
+      itemBuilder: (context, index) {
+        return _buildDebtCard(context, debts[index], provider);
+      },
+    );
+  }
+
+  Widget _buildDebtCard(
+    BuildContext context,
+    Debt debt,
+    DebtProvider provider,
+  ) {
+    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final dateFormat = DateFormat('dd MMM yyyy');
+    final color = debt.isOwedToMe ? _incomeColor : _expenseColor;
+    final progressColor = _getProgressColor(debt.progress);
+
+    return Dismissible(
+      key: ValueKey(debt.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: _expenseColor.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Icon(Icons.delete_rounded, color: _expenseColor),
+      ),
+      onDismissed: (_) {
+        provider.deleteDebt(debt.id!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted debt: ${debt.personName}'),
+            backgroundColor: _cardColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      child: GestureDetector(
+        onTap: () => _showDebtDetailSheet(context, debt, provider),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  // Avatar
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        debt.personName.isNotEmpty
+                            ? debt.personName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          debt.personName,
+                          style: const TextStyle(
+                            color: _textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                debt.isOwedToMe ? 'They owe me' : 'I owe',
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (debt.dueDate != null) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.event_rounded,
+                                color: _isDueOrOverdue(debt.dueDate!)
+                                    ? _warningColor
+                                    : _textSecondary,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                dateFormat.format(debt.dueDate!),
+                                style: TextStyle(
+                                  color: _isDueOrOverdue(debt.dueDate!)
+                                      ? _warningColor
+                                      : _textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        formatter.format(debt.remainingAmount),
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (debt.paidAmount > 0)
+                        Text(
+                          'of ${formatter.format(debt.totalAmount)}',
+                          style: const TextStyle(
+                            color: _textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // Description
+              if (debt.description.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  debt.description,
+                  style: TextStyle(
+                    color: _textSecondary.withValues(alpha: 0.8),
+                    fontSize: 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              // Progress bar
+              if (debt.paidAmount > 0) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: debt.progress,
+                    backgroundColor: progressColor.withValues(alpha: 0.12),
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${(debt.progress * 100).toInt()}% paid',
+                      style: TextStyle(
+                        color: progressColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '${formatter.format(debt.paidAmount)} paid',
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _isDueOrOverdue(DateTime dueDate) {
+    return dueDate.isBefore(DateTime.now().add(const Duration(days: 3)));
+  }
+
+  Color _getProgressColor(double progress) {
+    if (progress >= 1.0) return _incomeColor;
+    if (progress >= 0.5) return _warningColor;
+    return _accentColor;
+  }
+
+  // ── Debt Detail / Payment Sheet ──
+  void _showDebtDetailSheet(
+    BuildContext context,
+    Debt debt,
+    DebtProvider provider,
+  ) {
+    final paymentController = TextEditingController();
+    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final dateFormat = DateFormat('dd MMM yyyy');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF152238),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  debt.personName,
+                  style: const TextStyle(
+                    color: _textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  debt.description,
+                  style: const TextStyle(
+                    color: _textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Info cards
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInfoRow('Total Amount',
+                          formatter.format(debt.totalAmount)),
+                      const SizedBox(height: 10),
+                      _buildInfoRow(
+                          'Paid', formatter.format(debt.paidAmount)),
+                      const SizedBox(height: 10),
+                      _buildInfoRow('Remaining',
+                          formatter.format(debt.remainingAmount)),
+                      if (debt.dueDate != null) ...[
+                        const SizedBox(height: 10),
+                        _buildInfoRow(
+                          'Due Date',
+                          dateFormat.format(debt.dueDate!),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      _buildInfoRow(
+                        'Created',
+                        dateFormat.format(debt.createdDate),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                if (!debt.isFullyPaid) ...[
+                  // Payment input
+                  TextField(
+                    controller: paymentController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: _textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Payment Amount',
+                      hintStyle: const TextStyle(color: _textSecondary),
+                      prefixText: '₹ ',
+                      prefixStyle: const TextStyle(color: _textPrimary),
+                      filled: true,
+                      fillColor: _bgColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Buttons row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accentColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              final amount = double.tryParse(
+                                  paymentController.text.trim());
+                              if (amount == null || amount <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Enter a valid payment amount'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                return;
+                              }
+                              provider.recordPayment(debt, amount);
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text(
+                              'Record Payment',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _incomeColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            provider.markAsSettled(debt);
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    '${debt.personName}\'s debt settled!'),
+                                backgroundColor: _cardColor,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Settle',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  // Settled banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _incomeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _incomeColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_rounded,
+                            color: _incomeColor, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'This debt is fully settled',
+                          style: TextStyle(
+                            color: _incomeColor,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: _textSecondary, fontSize: 13),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: _textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Add Debt Sheet ──
+  void _showAddDebtSheet(BuildContext context) {
+    bool isOwedToMe = true;
+    final nameController = TextEditingController();
+    final amountController = TextEditingController();
+    final descController = TextEditingController();
+    DateTime? selectedDueDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF152238),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _textSecondary.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Add Debt',
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Direction toggle
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _bgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => isOwedToMe = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isOwedToMe
+                                      ? _incomeColor
+                                          .withValues(alpha: 0.2)
+                                      : Colors.transparent,
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'They Owe Me',
+                                    style: TextStyle(
+                                      color: isOwedToMe
+                                          ? _incomeColor
+                                          : _textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => isOwedToMe = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: !isOwedToMe
+                                      ? _expenseColor
+                                          .withValues(alpha: 0.2)
+                                      : Colors.transparent,
+                                  borderRadius:
+                                      BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'I Owe Them',
+                                    style: TextStyle(
+                                      color: !isOwedToMe
+                                          ? _expenseColor
+                                          : _textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Person name
+                    TextField(
+                      controller: nameController,
+                      style: const TextStyle(color: _textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Person Name',
+                        hintStyle:
+                            const TextStyle(color: _textSecondary),
+                        prefixIcon: const Icon(
+                            Icons.person_rounded,
+                            color: _textSecondary),
+                        filled: true,
+                        fillColor: _bgColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Amount
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: _textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Amount',
+                        hintStyle:
+                            const TextStyle(color: _textSecondary),
+                        prefixText: '₹ ',
+                        prefixStyle:
+                            const TextStyle(color: _textPrimary),
+                        filled: true,
+                        fillColor: _bgColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Description
+                    TextField(
+                      controller: descController,
+                      style: const TextStyle(color: _textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Description (e.g. "Lunch money")',
+                        hintStyle:
+                            const TextStyle(color: _textSecondary),
+                        filled: true,
+                        fillColor: _bgColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Due date picker
+                    GestureDetector(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now()
+                              .add(const Duration(days: 30)),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now()
+                              .add(const Duration(days: 365 * 5)),
+                        );
+                        if (picked != null) {
+                          setState(() => selectedDueDate = picked);
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _bgColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.event_rounded,
+                              color: _textSecondary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              selectedDueDate != null
+                                  ? 'Due: ${DateFormat('dd MMM yyyy').format(selectedDueDate!)}'
+                                  : 'Set Due Date (optional)',
+                              style: TextStyle(
+                                color: selectedDueDate != null
+                                    ? _textPrimary
+                                    : _textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Save button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isOwedToMe ? _incomeColor : _expenseColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          final name = nameController.text.trim();
+                          final amount = double.tryParse(
+                              amountController.text.trim());
+                          final desc = descController.text.trim();
+
+                          if (name.isEmpty ||
+                              amount == null ||
+                              amount <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Please enter name and valid amount'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+
+                          final debt = Debt(
+                            personName: name,
+                            totalAmount: amount,
+                            isOwedToMe: isOwedToMe,
+                            description: desc,
+                            dueDate: selectedDueDate,
+                            createdDate: DateTime.now(),
+                          );
+
+                          Provider.of<DebtProvider>(
+                            context,
+                            listen: false,
+                          ).addDebt(debt);
+
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          isOwedToMe ? 'Add - They Owe Me' : 'Add - I Owe',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
