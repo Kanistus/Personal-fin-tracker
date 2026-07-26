@@ -1,13 +1,16 @@
 import 'package:flutter/foundation.dart';
 import '../models/debt.dart';
+import '../models/debt_settlement.dart';
 import '../services/db_helper.dart';
 
 class DebtProvider extends ChangeNotifier {
   final DbHelper _dbHelper = DbHelper();
   List<Debt> _debts = [];
+  List<DebtSettlement> _allSettlements = [];
   bool _isLoading = false;
 
   List<Debt> get debts => _debts;
+  List<DebtSettlement> get allSettlements => _allSettlements;
   bool get isLoading => _isLoading;
 
   // Debts where someone owes me
@@ -42,9 +45,14 @@ class DebtProvider extends ChangeNotifier {
     notifyListeners();
 
     _debts = (await _dbHelper.getDebts()).cast<Debt>();
+    _allSettlements = await _dbHelper.getAllSettlements();
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  List<DebtSettlement> getSettlementsForDebt(int debtId) {
+    return _allSettlements.where((s) => s.debtId == debtId).toList();
   }
 
   Future<void> addDebt(Debt debt) async {
@@ -62,14 +70,36 @@ class DebtProvider extends ChangeNotifier {
     await loadDebts();
   }
 
-  Future<void> recordPayment(Debt debt, double paymentAmount) async {
-    final newPaid = (debt.paidAmount + paymentAmount).clamp(0.0, debt.totalAmount);
+  Future<void> recordPayment(Debt debt, double paymentAmount, {String note = ''}) async {
+    if (debt.id == null || paymentAmount <= 0) return;
+    final actualPaid = paymentAmount.clamp(0.0, debt.remainingAmount);
+    final newPaid = debt.paidAmount + actualPaid;
     final updated = debt.copyWith(paidAmount: newPaid);
+
+    final settlement = DebtSettlement(
+      debtId: debt.id!,
+      amount: actualPaid,
+      date: DateTime.now(),
+      note: note.isNotEmpty ? note : 'Partial Payment',
+    );
+
+    await _dbHelper.insertDebtSettlement(settlement);
     await _dbHelper.updateDebt(updated);
     await loadDebts();
   }
 
   Future<void> markAsSettled(Debt debt) async {
+    if (debt.id == null) return;
+    final remaining = debt.remainingAmount;
+    if (remaining > 0) {
+      final settlement = DebtSettlement(
+        debtId: debt.id!,
+        amount: remaining,
+        date: DateTime.now(),
+        note: 'Full Settlement',
+      );
+      await _dbHelper.insertDebtSettlement(settlement);
+    }
     final updated = debt.copyWith(paidAmount: debt.totalAmount);
     await _dbHelper.updateDebt(updated);
     await loadDebts();

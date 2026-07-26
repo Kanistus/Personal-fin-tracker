@@ -35,6 +35,11 @@ class TransactionProvider extends ChangeNotifier {
     await loadTransactions();
   }
 
+  Future<void> updateTransaction(Transaction txn) async {
+    await _dbHelper.updateTransaction(txn);
+    await loadTransactions();
+  }
+
   Future<void> deleteTransaction(int id) async {
     await _dbHelper.deleteTransaction(id);
     await loadTransactions();

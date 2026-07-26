@@ -28,7 +28,7 @@ class _DebtScreenState extends State<DebtScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DebtProvider>(context, listen: false).loadDebts();
     });
@@ -75,13 +75,14 @@ class _DebtScreenState extends State<DebtScreen>
               unselectedLabelColor: _textSecondary,
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: 12,
               ),
               dividerColor: Colors.transparent,
               tabs: const [
                 Tab(text: 'All'),
                 Tab(text: 'They Owe'),
                 Tab(text: 'I Owe'),
+                Tab(text: 'History'),
               ],
             ),
           ),
@@ -123,6 +124,7 @@ class _DebtScreenState extends State<DebtScreen>
                           .toList(),
                       provider,
                     ),
+                    _buildHistoryTab(provider),
                   ],
                 ),
               ),
@@ -501,6 +503,109 @@ class _DebtScreenState extends State<DebtScreen>
     );
   }
 
+  Widget _buildHistoryTab(DebtProvider provider) {
+    final settlements = provider.allSettlements;
+    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
+
+    if (settlements.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history_rounded,
+                color: _textSecondary.withValues(alpha: 0.4), size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'No settlement history yet',
+              style: TextStyle(color: _textSecondary, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Payments and settled debts will appear here',
+              style: TextStyle(color: _textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+      itemCount: settlements.length,
+      itemBuilder: (context, index) {
+        final settlement = settlements[index];
+        final debt = provider.debts.firstWhere(
+          (d) => d.id == settlement.debtId,
+          orElse: () => Debt(
+            personName: 'Unknown',
+            totalAmount: 0,
+            isOwedToMe: true,
+            description: '',
+            createdDate: DateTime.now(),
+          ),
+        );
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _incomeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: _incomeColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      debt.personName,
+                      style: const TextStyle(
+                        color: _textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${settlement.note} • ${dateFormat.format(settlement.date)}',
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${debt.isOwedToMe ? '+' : '-'} ${formatter.format(settlement.amount)}',
+                style: TextStyle(
+                  color: debt.isOwedToMe ? _incomeColor : _expenseColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   bool _isDueOrOverdue(DateTime dueDate) {
     return dueDate.isBefore(DateTime.now().add(const Duration(days: 3)));
   }
@@ -520,6 +625,8 @@ class _DebtScreenState extends State<DebtScreen>
     final paymentController = TextEditingController();
     final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
     final dateFormat = DateFormat('dd MMM yyyy');
+    final settlementDateFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    final settlements = provider.getSettlementsForDebt(debt.id!);
 
     showModalBottomSheet(
       context: context,
@@ -527,6 +634,9 @@ class _DebtScreenState extends State<DebtScreen>
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
@@ -536,108 +646,270 @@ class _DebtScreenState extends State<DebtScreen>
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: _textSecondary.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  debt.personName,
-                  style: const TextStyle(
-                    color: _textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  debt.description,
-                  style: const TextStyle(
-                    color: _textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Info cards
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _bgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildInfoRow('Total Amount',
-                          formatter.format(debt.totalAmount)),
-                      const SizedBox(height: 10),
-                      _buildInfoRow(
-                          'Paid', formatter.format(debt.paidAmount)),
-                      const SizedBox(height: 10),
-                      _buildInfoRow('Remaining',
-                          formatter.format(debt.remainingAmount)),
-                      if (debt.dueDate != null) ...[
-                        const SizedBox(height: 10),
-                        _buildInfoRow(
-                          'Due Date',
-                          dateFormat.format(debt.dueDate!),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      _buildInfoRow(
-                        'Created',
-                        dateFormat.format(debt.createdDate),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                if (!debt.isFullyPaid) ...[
-                  // Payment input
-                  TextField(
-                    controller: paymentController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: _textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Payment Amount',
-                      hintStyle: const TextStyle(color: _textSecondary),
-                      prefixText: '₹ ',
-                      prefixStyle: const TextStyle(color: _textPrimary),
-                      filled: true,
-                      fillColor: _bgColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _textSecondary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Buttons row
+                  // Header with Edit & Delete options
                   Row(
                     children: [
                       Expanded(
-                        child: SizedBox(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              debt.personName,
+                              style: const TextStyle(
+                                color: _textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (debt.description.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                debt.description,
+                                style: const TextStyle(
+                                  color: _textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _showAddDebtSheet(context, debtToEdit: debt);
+                        },
+                        icon: const Icon(Icons.edit_rounded, color: _accentColor),
+                        tooltip: 'Edit Debt',
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          if (debt.id != null) {
+                            provider.deleteDebt(debt.id!);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Deleted debt: ${debt.personName}'),
+                                backgroundColor: _cardColor,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.delete_rounded, color: _expenseColor),
+                        tooltip: 'Delete Debt',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Info cards
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildInfoRow('Total Amount',
+                            formatter.format(debt.totalAmount)),
+                        const SizedBox(height: 10),
+                        _buildInfoRow(
+                            'Paid', formatter.format(debt.paidAmount)),
+                        const SizedBox(height: 10),
+                        _buildInfoRow('Remaining',
+                            formatter.format(debt.remainingAmount)),
+                        if (debt.dueDate != null) ...[
+                          const SizedBox(height: 10),
+                          _buildInfoRow(
+                            'Due Date',
+                            dateFormat.format(debt.dueDate!),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        _buildInfoRow(
+                          'Created',
+                          dateFormat.format(debt.createdDate),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Settlement History section
+                  const Text(
+                    'Settlement History',
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (settlements.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _bgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'No settlement payments recorded yet',
+                        style: TextStyle(color: _textSecondary, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _bgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: settlements.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(color: Color(0xFF1F2D42), height: 1),
+                        itemBuilder: (context, index) {
+                          final s = settlements[index];
+                          return Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.history_rounded,
+                                    color: _incomeColor, size: 18),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.note,
+                                        style: const TextStyle(
+                                          color: _textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        settlementDateFormat.format(s.date),
+                                        style: const TextStyle(
+                                          color: _textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  formatter.format(s.amount),
+                                  style: const TextStyle(
+                                    color: _incomeColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+
+                  if (!debt.isFullyPaid) ...[
+                    // Payment input
+                    TextField(
+                      controller: paymentController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: _textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Payment Amount',
+                        hintStyle: const TextStyle(color: _textSecondary),
+                        prefixText: '₹ ',
+                        prefixStyle: const TextStyle(color: _textPrimary),
+                        filled: true,
+                        fillColor: _bgColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Buttons row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _accentColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                final amount = double.tryParse(
+                                    paymentController.text.trim());
+                                if (amount == null || amount <= 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Enter a valid payment amount'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                provider.recordPayment(debt, amount);
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text(
+                                'Record Payment',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
                           height: 50,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _accentColor,
+                              backgroundColor: _incomeColor,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -645,23 +917,19 @@ class _DebtScreenState extends State<DebtScreen>
                               elevation: 0,
                             ),
                             onPressed: () {
-                              final amount = double.tryParse(
-                                  paymentController.text.trim());
-                              if (amount == null || amount <= 0) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Enter a valid payment amount'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                                return;
-                              }
-                              provider.recordPayment(debt, amount);
+                              provider.markAsSettled(debt);
                               Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      '${debt.personName}\'s debt settled!'),
+                                  backgroundColor: _cardColor,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             },
                             child: const Text(
-                              'Record Payment',
+                              'Settle',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -669,73 +937,40 @@ class _DebtScreenState extends State<DebtScreen>
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _incomeColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            provider.markAsSettled(debt);
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    '${debt.personName}\'s debt settled!'),
-                                backgroundColor: _cardColor,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Settle',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  // Settled banner
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _incomeColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: _incomeColor.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle_rounded,
-                            color: _incomeColor, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'This debt is fully settled',
-                          style: TextStyle(
-                            color: _incomeColor,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                       ],
                     ),
-                  ),
+                  ] else ...[
+                    // Settled banner
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: _incomeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _incomeColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_rounded,
+                              color: _incomeColor, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'This debt is fully settled',
+                            style: TextStyle(
+                              color: _incomeColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -763,13 +998,17 @@ class _DebtScreenState extends State<DebtScreen>
     );
   }
 
-  // ── Add Debt Sheet ──
-  void _showAddDebtSheet(BuildContext context) {
-    bool isOwedToMe = true;
-    final nameController = TextEditingController();
-    final amountController = TextEditingController();
-    final descController = TextEditingController();
-    DateTime? selectedDueDate;
+  // ── Add / Edit Debt Sheet ──
+  void _showAddDebtSheet(BuildContext context, {Debt? debtToEdit}) {
+    final bool isEditing = debtToEdit != null;
+    bool isOwedToMe = debtToEdit?.isOwedToMe ?? true;
+    final nameController =
+        TextEditingController(text: debtToEdit?.personName ?? '');
+    final amountController = TextEditingController(
+        text: debtToEdit != null ? debtToEdit.totalAmount.toStringAsFixed(0) : '');
+    final descController =
+        TextEditingController(text: debtToEdit?.description ?? '');
+    DateTime? selectedDueDate = debtToEdit?.dueDate;
 
     showModalBottomSheet(
       context: context,
@@ -805,9 +1044,9 @@ class _DebtScreenState extends State<DebtScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Add Debt',
-                      style: TextStyle(
+                    Text(
+                      isEditing ? 'Edit Debt' : 'Add Debt',
+                      style: const TextStyle(
                         color: _textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -964,8 +1203,8 @@ class _DebtScreenState extends State<DebtScreen>
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now()
-                              .add(const Duration(days: 30)),
+                          initialDate: selectedDueDate ??
+                              DateTime.now().add(const Duration(days: 30)),
                           firstDate: DateTime(2020),
                           lastDate: DateTime.now()
                               .add(const Duration(days: 365 * 5)),
@@ -1008,7 +1247,7 @@ class _DebtScreenState extends State<DebtScreen>
                     ),
                     const SizedBox(height: 20),
 
-                    // Save button
+                    // Save / Update button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -1042,23 +1281,35 @@ class _DebtScreenState extends State<DebtScreen>
                           }
 
                           final debt = Debt(
+                            id: isEditing ? debtToEdit.id : null,
                             personName: name,
                             totalAmount: amount,
+                            paidAmount: isEditing ? debtToEdit.paidAmount : 0.0,
                             isOwedToMe: isOwedToMe,
                             description: desc,
                             dueDate: selectedDueDate,
-                            createdDate: DateTime.now(),
+                            createdDate: isEditing
+                                ? debtToEdit.createdDate
+                                : DateTime.now(),
                           );
 
-                          Provider.of<DebtProvider>(
+                          final provider = Provider.of<DebtProvider>(
                             context,
                             listen: false,
-                          ).addDebt(debt);
+                          );
+
+                          if (isEditing) {
+                            provider.updateDebt(debt);
+                          } else {
+                            provider.addDebt(debt);
+                          }
 
                           Navigator.of(context).pop();
                         },
                         child: Text(
-                          isOwedToMe ? 'Add - They Owe Me' : 'Add - I Owe',
+                          isEditing
+                              ? 'Update Debt'
+                              : (isOwedToMe ? 'Add - They Owe Me' : 'Add - I Owe'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,

@@ -36,4 +36,22 @@ class Transaction {
       date: DateTime.parse(map['date'] as String),
     );
   }
+
+  Transaction copyWith({
+    int? id,
+    String? title,
+    double? amount,
+    bool? isIncome,
+    String? category,
+    DateTime? date,
+  }) {
+    return Transaction(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      isIncome: isIncome ?? this.isIncome,
+      category: category ?? this.category,
+      date: date ?? this.date,
+    );
+  }
 }

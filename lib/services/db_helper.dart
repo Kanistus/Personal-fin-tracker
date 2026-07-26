@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/transaction.dart';
 import '../models/budget.dart';
 import '../models/debt.dart';
+import '../models/debt_settlement.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._internal();
@@ -23,7 +24,7 @@ class DbHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE transactions(
@@ -56,6 +57,15 @@ class DbHelper {
             createdDate TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE debt_settlements(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            debtId INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            note TEXT
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -83,6 +93,17 @@ class DbHelper {
             )
           ''');
         }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE debt_settlements(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              debtId INTEGER NOT NULL,
+              amount REAL NOT NULL,
+              date TEXT NOT NULL,
+              note TEXT
+            )
+          ''');
+        }
       },
     );
   }
@@ -98,6 +119,16 @@ class DbHelper {
     final db = await database;
     final maps = await db.query('transactions', orderBy: 'date DESC');
     return maps.map((map) => Transaction.fromMap(map)).toList();
+  }
+
+  Future<int> updateTransaction(Transaction txn) async {
+    final db = await database;
+    return await db.update(
+      'transactions',
+      txn.toMap(),
+      where: 'id = ?',
+      whereArgs: [txn.id],
+    );
   }
 
   Future<int> deleteTransaction(int id) async {
@@ -178,6 +209,31 @@ class DbHelper {
 
   Future<int> deleteDebt(int id) async {
     final db = await database;
+    await db.delete('debt_settlements', where: 'debtId = ?', whereArgs: [id]);
     return await db.delete('debts', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Debt Settlements ---
+
+  Future<int> insertDebtSettlement(DebtSettlement settlement) async {
+    final db = await database;
+    return await db.insert('debt_settlements', settlement.toMap());
+  }
+
+  Future<List<DebtSettlement>> getSettlementsForDebt(int debtId) async {
+    final db = await database;
+    final maps = await db.query(
+      'debt_settlements',
+      where: 'debtId = ?',
+      whereArgs: [debtId],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => DebtSettlement.fromMap(map)).toList();
+  }
+
+  Future<List<DebtSettlement>> getAllSettlements() async {
+    final db = await database;
+    final maps = await db.query('debt_settlements', orderBy: 'date DESC');
+    return maps.map((map) => DebtSettlement.fromMap(map)).toList();
   }
 }

@@ -299,61 +299,252 @@ class DashboardScreen extends StatelessWidget {
               ),
             );
           },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: _cardColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: (txn.isIncome ? _incomeColor : _expenseColor)
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+          child: GestureDetector(
+            onTap: () => _showTransactionDetailSheet(context, txn, provider),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: (txn.isIncome ? _incomeColor : _expenseColor)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: txn.isIncome ? _incomeColor : _expenseColor,
+                      size: 22,
+                    ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: txn.isIncome ? _incomeColor : _expenseColor,
-                    size: 22,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          txn.title,
+                          style: const TextStyle(
+                            color: _textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${txn.category} • ${dateFormat.format(txn.date)}',
+                          style: const TextStyle(
+                            color: _textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0').format(txn.amount)}',
+                    style: TextStyle(
+                      color: txn.isIncome ? _incomeColor : _expenseColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: _textSecondary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTransactionDetailSheet(
+    BuildContext context,
+    Transaction txn,
+    TransactionProvider provider,
+  ) {
+    final dateFormat = DateFormat('dd MMMM yyyy');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF152238),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        txn.title,
-                        style: const TextStyle(
-                          color: _textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: (txn.isIncome ? _incomeColor : _expenseColor)
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${txn.category} • ${dateFormat.format(txn.date)}',
-                        style: const TextStyle(
-                          color: _textSecondary,
-                          fontSize: 12,
-                        ),
+                      child: Icon(
+                        _categoryIcons[txn.category] ?? Icons.more_horiz_rounded,
+                        color: txn.isIncome ? _incomeColor : _expenseColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            txn.title,
+                            style: const TextStyle(
+                              color: _textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${txn.isIncome ? "Income" : "Expense"} • ${txn.category}',
+                            style: TextStyle(
+                              color: txn.isIncome ? _incomeColor : _expenseColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Info block
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _bgColor,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Amount', style: TextStyle(color: _textSecondary, fontSize: 13)),
+                          Text(
+                            '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0.00').format(txn.amount)}',
+                            style: TextStyle(
+                              color: txn.isIncome ? _incomeColor : _expenseColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(color: Color(0xFF1F2D42), height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Date', style: TextStyle(color: _textSecondary, fontSize: 13)),
+                          Text(
+                            dateFormat.format(txn.date),
+                            style: const TextStyle(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0').format(txn.amount)}',
-                  style: TextStyle(
-                    color: txn.isIncome ? _incomeColor : _expenseColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const SizedBox(height: 20),
+
+                // Edit and Delete buttons row
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _accentColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            _showAddTransactionSheet(context, transactionToEdit: txn);
+                          },
+                          icon: const Icon(Icons.edit_rounded, size: 18),
+                          label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _expenseColor.withValues(alpha: 0.2),
+                            foregroundColor: _expenseColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: _expenseColor),
+                            ),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            if (txn.id != null) {
+                              provider.deleteTransaction(txn.id!);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Deleted "${txn.title}"'),
+                                  backgroundColor: _cardColor,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.delete_rounded, size: 18),
+                          label: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -363,12 +554,16 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  void _showAddTransactionSheet(BuildContext context) {
-    bool isIncome = true;
-    String selectedCategory = _incomeCategories[0];
-    final titleController = TextEditingController();
-    final amountController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
+  void _showAddTransactionSheet(BuildContext context, {Transaction? transactionToEdit}) {
+    final bool isEditing = transactionToEdit != null;
+    bool isIncome = transactionToEdit?.isIncome ?? true;
+    String selectedCategory = transactionToEdit?.category ??
+        (isIncome ? _incomeCategories[0] : _expenseCategories[0]);
+    final titleController =
+        TextEditingController(text: transactionToEdit?.title ?? '');
+    final amountController = TextEditingController(
+        text: transactionToEdit != null ? transactionToEdit.amount.toStringAsFixed(0) : '');
+    DateTime selectedDate = transactionToEdit?.date ?? DateTime.now();
 
     showModalBottomSheet(
       context: context,
@@ -409,9 +604,9 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Add Transaction',
-                      style: TextStyle(
+                    Text(
+                      isEditing ? 'Edit Transaction' : 'Add Transaction',
+                      style: const TextStyle(
                         color: _textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -605,7 +800,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Save button
+                    // Save / Update button
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -636,6 +831,7 @@ class DashboardScreen extends StatelessWidget {
                           }
 
                           final txn = Transaction(
+                            id: isEditing ? transactionToEdit.id : null,
                             title: title,
                             amount: amount,
                             isIncome: isIncome,
@@ -643,15 +839,23 @@ class DashboardScreen extends StatelessWidget {
                             date: selectedDate,
                           );
 
-                          Provider.of<TransactionProvider>(
+                          final provider = Provider.of<TransactionProvider>(
                             context,
                             listen: false,
-                          ).addTransaction(txn);
+                          );
+
+                          if (isEditing) {
+                            provider.updateTransaction(txn);
+                          } else {
+                            provider.addTransaction(txn);
+                          }
 
                           Navigator.of(context).pop();
                         },
                         child: Text(
-                          isIncome ? 'Add Income' : 'Add Expense',
+                          isEditing
+                              ? 'Update Transaction'
+                              : (isIncome ? 'Add Income' : 'Add Expense'),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
