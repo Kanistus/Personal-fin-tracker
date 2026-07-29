@@ -19,10 +19,7 @@ class DashboardScreen extends StatelessWidget {
   static const List<String> _incomeCategories = [
     'Salary',
     'Freelance',
-    'Investment',
-    'Investments',
     'Rent',
-    'Snacks',
     'Gift',
     'Other',
   ];
@@ -34,8 +31,6 @@ class DashboardScreen extends StatelessWidget {
     'Transport',
     'Shopping',
     'Bills',
-    'Investments',
-    'Investment',
     'Entertainment',
     'Health',
     'Education',
@@ -45,8 +40,6 @@ class DashboardScreen extends StatelessWidget {
   static const Map<String, IconData> _categoryIcons = {
     'Salary': Icons.work_rounded,
     'Freelance': Icons.laptop_rounded,
-    'Investment': Icons.trending_up_rounded,
-    'Investments': Icons.trending_up_rounded,
     'Gift': Icons.card_giftcard_rounded,
     'Food': Icons.restaurant_rounded,
     'Snacks': Icons.fastfood_rounded,
