@@ -23,9 +23,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   static const List<String> _expenseCategories = [
     'Food',
+    'Snacks',
+    'Rent',
     'Transport',
     'Shopping',
     'Bills',
+    'Investments',
     'Entertainment',
     'Health',
     'Education',
@@ -34,9 +37,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   static const Map<String, IconData> _categoryIcons = {
     'Food': Icons.restaurant_rounded,
+    'Snacks': Icons.fastfood_rounded,
+    'Rent': Icons.home_rounded,
     'Transport': Icons.directions_car_rounded,
     'Shopping': Icons.shopping_bag_rounded,
     'Bills': Icons.receipt_long_rounded,
+    'Investments': Icons.trending_up_rounded,
+    'Investment': Icons.trending_up_rounded,
     'Entertainment': Icons.movie_rounded,
     'Health': Icons.favorite_rounded,
     'Education': Icons.school_rounded,
