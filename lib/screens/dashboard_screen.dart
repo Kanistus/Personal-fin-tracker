@@ -20,6 +20,9 @@ class DashboardScreen extends StatelessWidget {
     'Salary',
     'Freelance',
     'Investment',
+    'Investments',
+    'Rent',
+    'Snacks',
     'Gift',
     'Other',
   ];
@@ -32,6 +35,7 @@ class DashboardScreen extends StatelessWidget {
     'Shopping',
     'Bills',
     'Investments',
+    'Investment',
     'Entertainment',
     'Health',
     'Education',

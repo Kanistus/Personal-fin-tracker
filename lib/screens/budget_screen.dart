@@ -29,6 +29,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     'Shopping',
     'Bills',
     'Investments',
+    'Investment',
     'Entertainment',
     'Health',
     'Education',
