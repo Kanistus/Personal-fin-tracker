@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/budget_provider.dart';
+import '../providers/debt_provider.dart';
 import '../services/csv_exporter.dart';
 import '../services/excel_exporter.dart';
 
@@ -63,17 +64,17 @@ class MoreScreen extends StatelessWidget {
             _buildOptionCard(
               icon: Icons.grid_on_rounded,
               title: 'Export to Excel',
-              subtitle: 'Full report with formatted sheets & summaries',
+              subtitle: 'Full report with Budget vs Expense columns',
               accentColor: _incomeColor,
-              onTap: () => _exportExcel(context),
+              onTap: () => _exportFullReport(context),
             ),
             const SizedBox(height: 10),
 
-            // Export to Excel (with budgets)
+            // Export Full Report
             _buildOptionCard(
               icon: Icons.file_download_rounded,
               title: 'Export Full Report',
-              subtitle: 'Excel file with transactions + budget data',
+              subtitle: 'Transactions, Budget vs Expense & Debts',
               accentColor: const Color(0xFF9B59B6),
               onTap: () => _exportFullReport(context),
             ),
@@ -90,7 +91,7 @@ class MoreScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Version 1.1.0',
+                    'Version 1.2.0',
                     style: TextStyle(color: _textSecondary, fontSize: 12),
                   ),
                 ],
@@ -179,30 +180,13 @@ class MoreScreen extends StatelessWidget {
     }
   }
 
-  void _exportExcel(BuildContext context) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-
-    if (provider.transactions.isEmpty) {
-      _showEmptySnackBar(context);
-      return;
-    }
-
-    try {
-      await ExcelExporter.exportAndShare(
-        transactions: provider.transactions,
-      );
-    } catch (e) {
-      if (context.mounted) {
-        _showErrorSnackBar(context, 'Excel export failed: $e');
-      }
-    }
-  }
-
   void _exportFullReport(BuildContext context) async {
     final txnProvider =
         Provider.of<TransactionProvider>(context, listen: false);
     final budgetProvider =
         Provider.of<BudgetProvider>(context, listen: false);
+    final debtProvider =
+        Provider.of<DebtProvider>(context, listen: false);
 
     if (txnProvider.transactions.isEmpty) {
       _showEmptySnackBar(context);
@@ -211,6 +195,10 @@ class MoreScreen extends StatelessWidget {
 
     if (budgetProvider.budgets.isEmpty) {
       await budgetProvider.loadBudgets();
+    }
+
+    if (debtProvider.debts.isEmpty) {
+      await debtProvider.loadDebts();
     }
 
     try {
@@ -222,10 +210,14 @@ class MoreScreen extends StatelessWidget {
         spentMap: budgetProvider.spentMap.isNotEmpty
             ? budgetProvider.spentMap
             : null,
+        debts: debtProvider.debts.isNotEmpty ? debtProvider.debts : null,
+        settlements: debtProvider.allSettlements.isNotEmpty
+            ? debtProvider.allSettlements
+            : null,
       );
     } catch (e) {
       if (context.mounted) {
-        _showErrorSnackBar(context, 'Full report export failed: $e');
+        _showErrorSnackBar(context, 'Report export failed: $e');
       }
     }
   }
