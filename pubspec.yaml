@@ -42,7 +42,7 @@ flutter_launcher_icons:
     image_path: "assets/app_icon.png"
   image_path: "assets/app_icon.png"
   adaptive_icon_foreground: "assets/app_icon.png"
-  adaptive_icon_background: "#0F1B2D"
+  adaptive_icon_background: "#E0EBE0"
 
 flutter:
   uses-material-design: true
