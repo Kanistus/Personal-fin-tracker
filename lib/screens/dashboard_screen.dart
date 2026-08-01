@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/currency_provider.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -89,7 +90,7 @@ class DashboardScreen extends StatelessWidget {
               // Summary cards
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: _buildSummaryCards(provider),
+                child: _buildSummaryCards(context, provider),
               ),
 
               // Transactions header
@@ -136,8 +137,9 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCards(TransactionProvider provider) {
-    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+  Widget _buildSummaryCards(BuildContext context, TransactionProvider provider) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
+    final formatter = currencyProvider.formatter;
 
     return Column(
       children: [
@@ -276,6 +278,7 @@ class DashboardScreen extends StatelessWidget {
     BuildContext context,
     TransactionProvider provider,
   ) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final dateFormat = DateFormat('dd MMM yyyy');
 
     return ListView.builder(
@@ -362,7 +365,7 @@ class DashboardScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0').format(txn.amount)}',
+                        '${txn.isIncome ? '+' : '-'} ${currencyProvider.symbol}${NumberFormat('#,##0').format(txn.amount)}',
                         style: TextStyle(
                           color: txn.isIncome ? _incomeColor : _expenseColor,
                           fontSize: 15,
@@ -432,6 +435,7 @@ class DashboardScreen extends StatelessWidget {
     Transaction txn,
     TransactionProvider provider,
   ) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final dateFormat = DateFormat('dd MMMM yyyy');
 
     showModalBottomSheet(
@@ -518,7 +522,7 @@ class DashboardScreen extends StatelessWidget {
                         children: [
                           const Text('Amount', style: TextStyle(color: _textSecondary, fontSize: 13)),
                           Text(
-                            '${txn.isIncome ? '+' : '-'} ₹${NumberFormat('#,##0.00').format(txn.amount)}',
+                            '${txn.isIncome ? '+' : '-'} ${currencyProvider.symbol}${NumberFormat('#,##0.00').format(txn.amount)}',
                             style: TextStyle(
                               color: txn.isIncome ? _incomeColor : _expenseColor,
                               fontSize: 16,
@@ -629,6 +633,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   void _showAddTransactionSheet(BuildContext context, {Transaction? transactionToEdit}) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final bool isEditing = transactionToEdit != null;
     bool isIncome = transactionToEdit?.isIncome ?? false;
     String? selectedCategory = transactionToEdit?.category;
@@ -798,7 +803,7 @@ class DashboardScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: 'Amount',
                         hintStyle: const TextStyle(color: _textSecondary),
-                        prefixText: '₹ ',
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixStyle: const TextStyle(color: _textPrimary),
                         filled: true,
                         fillColor: _bgColor,

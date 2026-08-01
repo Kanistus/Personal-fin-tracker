@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/debt.dart';
 import '../providers/debt_provider.dart';
+import '../providers/currency_provider.dart';
 
 class DebtScreen extends StatefulWidget {
   const DebtScreen({super.key});
@@ -42,6 +43,8 @@ class _DebtScreenState extends State<DebtScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Listen to currency changes to trigger rebuild
+    Provider.of<CurrencyProvider>(context);
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
@@ -141,7 +144,8 @@ class _DebtScreenState extends State<DebtScreen>
   }
 
   Widget _buildSummaryCard(DebtProvider provider) {
-    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
+    final formatter = currencyProvider.formatter;
     final net = provider.netPosition;
 
     return Container(
@@ -299,7 +303,8 @@ class _DebtScreenState extends State<DebtScreen>
     Debt debt,
     DebtProvider provider,
   ) {
-    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
+    final formatter = currencyProvider.formatter;
     final dateFormat = DateFormat('dd MMM yyyy');
     final color = debt.isOwedToMe ? _incomeColor : _expenseColor;
     final progressColor = _getProgressColor(debt.progress);
@@ -571,7 +576,8 @@ class _DebtScreenState extends State<DebtScreen>
 
   Widget _buildHistoryTab(DebtProvider provider) {
     final settlements = provider.allSettlements;
-    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
+    final formatter = currencyProvider.formatter;
     final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
 
     if (settlements.isEmpty) {
@@ -688,8 +694,9 @@ class _DebtScreenState extends State<DebtScreen>
     Debt debt,
     DebtProvider provider,
   ) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final paymentController = TextEditingController();
-    final formatter = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final formatter = currencyProvider.formatter;
     final dateFormat = DateFormat('dd MMM yyyy');
     final settlementDateFormat = DateFormat('dd MMM yyyy, hh:mm a');
     final settlements = provider.getSettlementsForDebt(debt.id!);
@@ -932,7 +939,7 @@ class _DebtScreenState extends State<DebtScreen>
                       decoration: InputDecoration(
                         hintText: 'Payment Amount',
                         hintStyle: const TextStyle(color: _textSecondary),
-                        prefixText: '₹ ',
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixStyle: const TextStyle(color: _textPrimary),
                         filled: true,
                         fillColor: _bgColor,
@@ -1001,7 +1008,7 @@ class _DebtScreenState extends State<DebtScreen>
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            'Recorded payment of ₹${NumberFormat('#,##0').format(amount)} for ${debt.personName}',
+                                            'Recorded payment of ${currencyProvider.symbol}${NumberFormat('#,##0').format(amount)} for ${debt.personName}',
                                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
                                           ),
                                         ),
@@ -1145,6 +1152,7 @@ class _DebtScreenState extends State<DebtScreen>
     final descController =
         TextEditingController(text: debtToEdit?.description ?? '');
     DateTime? selectedDueDate = debtToEdit?.dueDate;
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
 
     showModalBottomSheet(
       context: context,
@@ -1295,7 +1303,7 @@ class _DebtScreenState extends State<DebtScreen>
                         hintText: 'Amount',
                         hintStyle:
                             const TextStyle(color: _textSecondary),
-                        prefixText: '₹ ',
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixStyle:
                             const TextStyle(color: _textPrimary),
                         filled: true,

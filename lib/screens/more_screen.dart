@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/budget_provider.dart';
 import '../providers/debt_provider.dart';
+import '../providers/currency_provider.dart';
+import '../models/currency_model.dart';
 import '../services/csv_exporter.dart';
 import '../services/excel_exporter.dart';
 
@@ -18,6 +20,9 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
+    final currentCurrency = currencyProvider.currency;
+
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
@@ -38,6 +43,28 @@ class MoreScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Settings section header
+            const Text(
+              'Settings',
+              style: TextStyle(
+                color: _textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Currency selector
+            _buildOptionCard(
+              icon: Icons.currency_exchange_rounded,
+              title: 'Currency',
+              subtitle: '${currentCurrency.flag}  ${currentCurrency.name} (${currentCurrency.symbol})',
+              accentColor: const Color(0xFFE67E22),
+              onTap: () => _showCurrencyPicker(context),
+            ),
+            const SizedBox(height: 20),
+
             // Export section header
             const Text(
               'Export Data',
@@ -91,7 +118,7 @@ class MoreScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Version 1.2.0',
+                    'Version 1.3.0',
                     style: TextStyle(color: _textSecondary, fontSize: 12),
                   ),
                 ],
@@ -163,6 +190,202 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
+  // ── Currency Picker Bottom Sheet ──
+  void _showCurrencyPicker(BuildContext context) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final selectedCode = currencyProvider.code;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF152238),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Column(
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: _textSecondary.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Row(
+                          children: [
+                            Icon(Icons.currency_exchange_rounded, color: Color(0xFFE67E22), size: 24),
+                            SizedBox(width: 12),
+                            Text(
+                              'Select Currency',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Choose your preferred currency for all amounts',
+                            style: TextStyle(
+                              color: _textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+
+                  // Currency list
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      itemCount: Currency.supportedCurrencies.length,
+                      itemBuilder: (context, index) {
+                        final currency = Currency.supportedCurrencies[index];
+                        final isSelected = currency.code == selectedCode;
+
+                        return GestureDetector(
+                          onTap: () {
+                            currencyProvider.setCurrency(currency.code);
+                            setState(() {}); // Rebuild to show checkmark
+                            Navigator.of(ctx).pop();
+
+                            // Show confirmation
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Currency changed to ${currency.flag} ${currency.name} (${currency.symbol})',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFF27AE60),
+                                behavior: SnackBarBehavior.floating,
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFE67E22).withValues(alpha: 0.12)
+                                  : _bgColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: isSelected
+                                  ? Border.all(color: const Color(0xFFE67E22).withValues(alpha: 0.4))
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                // Flag
+                                Text(
+                                  currency.flag,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                                const SizedBox(width: 14),
+                                // Name & Code
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        currency.name,
+                                        style: TextStyle(
+                                          color: isSelected ? const Color(0xFFE67E22) : _textPrimary,
+                                          fontSize: 15,
+                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        currency.code,
+                                        style: const TextStyle(
+                                          color: _textSecondary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Symbol
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFFE67E22).withValues(alpha: 0.2)
+                                        : _cardColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    currency.symbol,
+                                    style: TextStyle(
+                                      color: isSelected ? const Color(0xFFE67E22) : _textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected) ...[
+                                  const SizedBox(width: 10),
+                                  const Icon(Icons.check_circle_rounded, color: Color(0xFFE67E22), size: 22),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _exportCsv(BuildContext context) async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
 
@@ -187,6 +410,8 @@ class MoreScreen extends StatelessWidget {
         Provider.of<BudgetProvider>(context, listen: false);
     final debtProvider =
         Provider.of<DebtProvider>(context, listen: false);
+    final currencyProvider =
+        Provider.of<CurrencyProvider>(context, listen: false);
 
     if (txnProvider.transactions.isEmpty) {
       _showEmptySnackBar(context);
@@ -214,6 +439,8 @@ class MoreScreen extends StatelessWidget {
         settlements: debtProvider.allSettlements.isNotEmpty
             ? debtProvider.allSettlements
             : null,
+        currencySymbol: currencyProvider.symbol,
+        currencyDecimals: currencyProvider.currency.decimalDigits,
       );
     } catch (e) {
       if (context.mounted) {

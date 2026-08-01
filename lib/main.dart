@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/debt_provider.dart';
+import 'providers/currency_provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/budget_screen.dart';
 import 'screens/spending_screen.dart';
@@ -29,6 +30,9 @@ class PersonalFinApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => DebtProvider()..loadDebts(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CurrencyProvider()..loadCurrency(),
         ),
       ],
       child: MaterialApp(

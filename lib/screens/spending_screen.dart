@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/currency_provider.dart';
 
 class SpendingScreen extends StatefulWidget {
   const SpendingScreen({super.key});
@@ -78,6 +79,7 @@ class _SpendingScreenState extends State<SpendingScreen>
 
   @override
   Widget build(BuildContext context) {
+    Provider.of<CurrencyProvider>(context);
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
@@ -248,6 +250,7 @@ class _SpendingScreenState extends State<SpendingScreen>
   }
 
   Widget _buildIncomeTab() {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     return Consumer<TransactionProvider>(
       builder: (context, provider, _) {
         final incomes = provider.getCategoryIncomes(_monthKey);
@@ -299,7 +302,7 @@ class _SpendingScreenState extends State<SpendingScreen>
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    NumberFormat.currency(symbol: '₹', decimalDigits: 0)
+                    currencyProvider.formatter
                         .format(totalIncome),
                     style: const TextStyle(
                       color: _incomeColor,
@@ -346,8 +349,9 @@ class _SpendingScreenState extends State<SpendingScreen>
     required double totalIncome,
     required double avgDaily,
   }) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final formatter =
-        NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+        currencyProvider.formatter;
     final savings = totalIncome - totalExpense;
 
     return Column(
@@ -472,6 +476,7 @@ class _SpendingScreenState extends State<SpendingScreen>
   }
 
   Widget _buildDailyChart(Map<int, double> dailySpending) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final maxSpend = dailySpending.values
         .fold(0.0, (max, v) => v > max ? v : max);
     final daysInMonth = DateTime(
@@ -510,7 +515,7 @@ class _SpendingScreenState extends State<SpendingScreen>
 
                 return Expanded(
                   child: Tooltip(
-                    message: 'Day $day: ₹${amount.toStringAsFixed(0)}',
+                    message: 'Day $day: ${currencyProvider.symbol}${amount.toStringAsFixed(0)}',
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 0.5),
                       decoration: BoxDecoration(
@@ -563,8 +568,9 @@ class _SpendingScreenState extends State<SpendingScreen>
     required Color color,
     required double total,
   }) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final formatter =
-        NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+        currencyProvider.formatter;
     final icon = _categoryIcons[category] ?? Icons.more_horiz_rounded;
 
     return Container(

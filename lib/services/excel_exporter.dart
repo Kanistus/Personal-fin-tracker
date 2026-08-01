@@ -15,10 +15,12 @@ class ExcelExporter {
     Map<String, double>? spentMap,
     List<Debt>? debts,
     List<DebtSettlement>? settlements,
+    String currencySymbol = '₹',
+    int currencyDecimals = 0,
   }) async {
     final excel = Excel.createExcel();
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol, decimalDigits: currencyDecimals);
 
     // ── Sheet 1: Transactions ──
     excel.rename('Sheet1', 'Transactions');

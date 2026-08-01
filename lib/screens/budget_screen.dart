@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/budget.dart';
 import '../providers/budget_provider.dart';
+import '../providers/currency_provider.dart';
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -85,6 +86,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Provider.of<CurrencyProvider>(context, listen: true);
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
@@ -156,12 +158,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                   children: [
                     // ── Budget Planning Summary Card ──
-                    _buildPlanningCard(provider),
+                    _buildPlanningCard(context, provider),
                     const SizedBox(height: 16),
 
                     // ── Alerts Section ──
                     if (provider.overBudgetCategories.isNotEmpty)
-                      _buildAlertCard(provider),
+                      _buildAlertCard(context, provider),
 
                     // Section header
                     Row(
@@ -208,9 +210,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   // ── Budget Planning Summary Card ──
-  Widget _buildPlanningCard(BudgetProvider provider) {
-    final formatter =
-        NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+  Widget _buildPlanningCard(BuildContext context, BudgetProvider provider) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
+    final formatter = currencyProvider.formatter;
     final overallProgress = provider.overallProgress;
     final progressColor = _progressColor(overallProgress);
 
@@ -348,10 +350,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   // ── Alerts Card ──
-  Widget _buildAlertCard(BudgetProvider provider) {
+  Widget _buildAlertCard(BuildContext context, BudgetProvider provider) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final overBudget = provider.overBudgetCategories;
-    final formatter =
-        NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final formatter = currencyProvider.formatter;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -485,13 +487,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
     BudgetProvider provider,
     Budget budget,
   ) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final spent = provider.getSpent(budget.category);
     final progress = provider.getProgress(budget);
     final color = _progressColor(progress);
     final icon =
         _categoryIcons[budget.category] ?? Icons.more_horiz_rounded;
-    final formatter =
-        NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final formatter = currencyProvider.formatter;
     final remaining = budget.limit - spent;
 
     return Dismissible(
@@ -631,6 +633,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   // ── Edit Budget Bottom Sheet ──
   void _showEditBudgetSheet(BuildContext context, Budget budget) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     final limitController =
         TextEditingController(text: budget.limit.toStringAsFixed(0));
 
@@ -736,9 +739,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                         ),
                       ),
                       Text(
-                        NumberFormat.currency(
-                                symbol: '₹', decimalDigits: 0)
-                            .format(budget.limit),
+                        currencyProvider.formatter.format(budget.limit),
                         style: const TextStyle(
                           color: _accentColor,
                           fontSize: 16,
@@ -759,7 +760,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     hintText: 'New Monthly Limit',
                     hintStyle:
                         const TextStyle(color: _textSecondary),
-                    prefixText: '₹ ',
+                    prefixText: '${currencyProvider.symbol} ',
                     prefixStyle:
                         const TextStyle(color: _textPrimary),
                     filled: true,
@@ -845,6 +846,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   void _showAddBudgetSheet(BuildContext context) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context, listen: false);
     String? selectedCategory;
     bool categoryError = false;
     final limitController = TextEditingController();
@@ -964,7 +966,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                         hintText: 'Monthly Limit',
                         hintStyle: const TextStyle(
                             color: _textSecondary),
-                        prefixText: '₹ ',
+                        prefixText: '${currencyProvider.symbol} ',
                         prefixStyle: const TextStyle(
                             color: _textPrimary),
                         filled: true,
