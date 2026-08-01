@@ -465,9 +465,28 @@ class _DebtScreenState extends State<DebtScreen>
                         provider.deleteDebt(debt.id!);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Deleted debt: ${debt.personName}'),
-                            backgroundColor: _cardColor,
+                            content: Row(
+                              children: [
+                                const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Deleted debt: ${debt.personName}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFC0392B),
                             behavior: SnackBarBehavior.floating,
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         );
                       }
@@ -735,9 +754,28 @@ class _DebtScreenState extends State<DebtScreen>
                             provider.deleteDebt(debt.id!);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Deleted debt: ${debt.personName}'),
-                                backgroundColor: _cardColor,
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Deleted debt: ${debt.personName}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFFC0392B),
                                 behavior: SnackBarBehavior.floating,
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             );
                           }
