@@ -459,11 +459,21 @@ class _BudgetScreenState extends State<BudgetScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Budgets copied from last month!'),
-          backgroundColor: _cardColor,
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Budgets copied from last month!',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF27AE60),
           behavior: SnackBarBehavior.floating,
+          elevation: 4,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       );
@@ -501,9 +511,28 @@ class _BudgetScreenState extends State<BudgetScreen> {
         provider.deleteBudget(budget.id!);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Deleted ${budget.category} budget'),
-            backgroundColor: _cardColor,
+            content: Row(
+              children: [
+                const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Deleted ${budget.category} budget',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFC0392B),
             behavior: SnackBarBehavior.floating,
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       },
@@ -637,13 +666,55 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Edit ${budget.category} Budget',
-                  style: const TextStyle(
-                    color: _textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Edit ${budget.category} Budget',
+                        style: const TextStyle(
+                          color: _textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: _expenseColor),
+                      tooltip: 'Delete Budget',
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        if (budget.id != null) {
+                          Provider.of<BudgetProvider>(context, listen: false).deleteBudget(budget.id!);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Deleted ${budget.category} budget',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFFC0392B),
+                              behavior: SnackBarBehavior.floating,
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
