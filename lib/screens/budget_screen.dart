@@ -760,6 +760,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   void _showAddBudgetSheet(BuildContext context) {
     String? selectedCategory;
+    bool categoryError = false;
     final limitController = TextEditingController();
 
     showModalBottomSheet(
@@ -814,6 +815,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       decoration: BoxDecoration(
                         color: _bgColor,
                         borderRadius: BorderRadius.circular(12),
+                        border: categoryError
+                            ? Border.all(color: _expenseColor, width: 1.5)
+                            : Border.all(color: Colors.transparent, width: 1.5),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -839,13 +843,29 @@ class _BudgetScreenState extends State<BudgetScreen> {
                           }).toList(),
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() =>
-                                  selectedCategory = val);
+                              setState(() {
+                                selectedCategory = val;
+                                categoryError = false;
+                              });
                             }
                           },
                         ),
                       ),
                     ),
+                    if (categoryError) ...[
+                      const SizedBox(height: 4),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Text(
+                          '⚠️ Please fill this: Category is required',
+                          style: TextStyle(
+                            color: _expenseColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
 
                     // Limit field
@@ -893,26 +913,36 @@ class _BudgetScreenState extends State<BudgetScreen> {
                         ),
                         onPressed: () {
                           if (selectedCategory == null || selectedCategory!.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please select a category'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            return;
+                            setState(() {
+                              categoryError = true;
+                            });
                           }
 
                           final limit = double.tryParse(
                               limitController.text.trim());
 
-                          if (limit == null || limit <= 0) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Please enter a valid limit'),
-                                behavior:
-                                    SnackBarBehavior.floating,
+                          if (selectedCategory == null || limit == null || limit <= 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        selectedCategory == null
+                                            ? 'Please fill these: Please select a Category'
+                                            : 'Please fill these: Monthly Limit is required',
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: _expenseColor,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             );
                             return;

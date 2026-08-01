@@ -594,6 +594,7 @@ class DashboardScreen extends StatelessWidget {
     final bool isEditing = transactionToEdit != null;
     bool isIncome = transactionToEdit?.isIncome ?? false;
     String? selectedCategory = transactionToEdit?.category;
+    bool categoryError = false;
     final titleController =
         TextEditingController(text: transactionToEdit?.title ?? '');
     final amountController = TextEditingController(
@@ -781,6 +782,9 @@ class DashboardScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _bgColor,
                         borderRadius: BorderRadius.circular(12),
+                        border: categoryError
+                            ? Border.all(color: _expenseColor, width: 1.5)
+                            : Border.all(color: Colors.transparent, width: 1.5),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
@@ -804,12 +808,29 @@ class DashboardScreen extends StatelessWidget {
                           }).toList(),
                           onChanged: (val) {
                             if (val != null) {
-                              setState(() => selectedCategory = val);
+                              setState(() {
+                                selectedCategory = val;
+                                categoryError = false;
+                              });
                             }
                           },
                         ),
                       ),
                     ),
+                    if (categoryError) ...[
+                      const SizedBox(height: 4),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Text(
+                          '⚠️ Please fill this: Category is required',
+                          style: TextStyle(
+                            color: _expenseColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
 
                     // Date picker
@@ -872,22 +893,34 @@ class DashboardScreen extends StatelessWidget {
                           final amount =
                               double.tryParse(amountController.text.trim());
 
-                          if (title.isEmpty || amount == null || amount <= 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('Please enter a valid title and amount'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            return;
+                          if (selectedCategory == null || selectedCategory!.isEmpty) {
+                            setState(() {
+                              categoryError = true;
+                            });
                           }
 
-                          if (selectedCategory == null || selectedCategory!.isEmpty) {
+                          if (title.isEmpty || amount == null || amount <= 0 || selectedCategory == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please select a category'),
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        selectedCategory == null
+                                            ? 'Please fill these: Please select a Category'
+                                            : 'Please fill these: Title and Amount are required',
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: _expenseColor,
                                 behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             );
                             return;
