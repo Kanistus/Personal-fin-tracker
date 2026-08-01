@@ -321,9 +321,28 @@ class _DebtScreenState extends State<DebtScreen>
         provider.deleteDebt(debt.id!);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Deleted debt: ${debt.personName}'),
-            backgroundColor: _cardColor,
+            content: Row(
+              children: [
+                const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Deleted debt: ${debt.personName}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFC0392B),
             behavior: SnackBarBehavior.floating,
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       },
@@ -949,16 +968,53 @@ class _DebtScreenState extends State<DebtScreen>
                                     paymentController.text.trim());
                                 if (amount == null || amount <= 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Enter a valid payment amount'),
+                                    SnackBar(
+                                      content: const Row(
+                                        children: [
+                                          Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                          SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              'Please enter a valid payment amount',
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      backgroundColor: const Color(0xFFC0392B),
                                       behavior: SnackBarBehavior.floating,
+                                      elevation: 4,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   );
                                   return;
                                 }
                                 provider.recordPayment(debt, amount);
                                 Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            'Recorded payment of ₹${NumberFormat('#,##0').format(amount)} for ${debt.personName}',
+                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: const Color(0xFF27AE60),
+                                    behavior: SnackBarBehavior.floating,
+                                    elevation: 4,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
                               },
                               child: const Text(
                                 'Record Payment',
@@ -987,10 +1043,24 @@ class _DebtScreenState extends State<DebtScreen>
                               Navigator.of(context).pop();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                      '${debt.personName}\'s debt settled!'),
-                                  backgroundColor: _cardColor,
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          '${debt.personName}\'s debt has been fully settled! 🎉',
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF27AE60),
                                   behavior: SnackBarBehavior.floating,
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
                               );
                             },
@@ -1337,10 +1407,25 @@ class _DebtScreenState extends State<DebtScreen>
                               amount == null ||
                               amount <= 0) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Please enter name and valid amount'),
+                              SnackBar(
+                                content: const Row(
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Please fill these: Name and valid amount are required',
+                                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFFC0392B),
                                 behavior: SnackBarBehavior.floating,
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             );
                             return;

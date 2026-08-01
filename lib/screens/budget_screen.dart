@@ -724,10 +724,25 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
                       if (limit == null || limit <= 0) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Please enter a valid limit'),
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Please fill these: Please enter a valid limit',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFC0392B),
                             behavior: SnackBarBehavior.floating,
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         );
                         return;

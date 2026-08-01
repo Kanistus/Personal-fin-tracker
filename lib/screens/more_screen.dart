@@ -225,11 +225,21 @@ class MoreScreen extends StatelessWidget {
   void _showEmptySnackBar(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('No transactions to export'),
-        backgroundColor: _cardColor,
+        content: const Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 10),
+            Text(
+              'No transactions to export',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2980B9),
         behavior: SnackBarBehavior.floating,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
@@ -238,11 +248,23 @@ class MoreScreen extends StatelessWidget {
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: _cardColor,
+        content: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFC0392B),
         behavior: SnackBarBehavior.floating,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
