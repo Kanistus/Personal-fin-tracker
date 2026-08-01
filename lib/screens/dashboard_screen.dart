@@ -592,9 +592,8 @@ class DashboardScreen extends StatelessWidget {
 
   void _showAddTransactionSheet(BuildContext context, {Transaction? transactionToEdit}) {
     final bool isEditing = transactionToEdit != null;
-    bool isIncome = transactionToEdit?.isIncome ?? true;
-    String selectedCategory = transactionToEdit?.category ??
-        (isIncome ? _incomeCategories[0] : _expenseCategories[0]);
+    bool isIncome = transactionToEdit?.isIncome ?? false;
+    String? selectedCategory = transactionToEdit?.category;
     final titleController =
         TextEditingController(text: transactionToEdit?.title ?? '');
     final amountController = TextEditingController(
@@ -610,8 +609,8 @@ class DashboardScreen extends StatelessWidget {
           builder: (context, setState) {
             final categories =
                 isIncome ? _incomeCategories : _expenseCategories;
-            if (!categories.contains(selectedCategory)) {
-              selectedCategory = categories[0];
+            if (selectedCategory != null && !categories.contains(selectedCategory)) {
+              selectedCategory = null;
             }
 
             return Container(
@@ -660,8 +659,15 @@ class DashboardScreen extends StatelessWidget {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => isIncome = true),
+                              onTap: () {
+                                setState(() {
+                                  isIncome = true;
+                                  if (selectedCategory != null &&
+                                      !_incomeCategories.contains(selectedCategory)) {
+                                    selectedCategory = null;
+                                  }
+                                });
+                              },
                               child: Container(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 12),
@@ -687,8 +693,15 @@ class DashboardScreen extends StatelessWidget {
                           ),
                           Expanded(
                             child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => isIncome = false),
+                              onTap: () {
+                                setState(() {
+                                  isIncome = false;
+                                  if (selectedCategory != null &&
+                                      !_expenseCategories.contains(selectedCategory)) {
+                                    selectedCategory = null;
+                                  }
+                                });
+                              },
                               child: Container(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 12),
@@ -772,6 +785,10 @@ class DashboardScreen extends StatelessWidget {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedCategory,
+                          hint: const Text(
+                            'Select Category',
+                            style: TextStyle(color: _textSecondary),
+                          ),
                           isExpanded: true,
                           dropdownColor: _cardColor,
                           style: const TextStyle(color: _textPrimary),
@@ -866,12 +883,22 @@ class DashboardScreen extends StatelessWidget {
                             return;
                           }
 
+                          if (selectedCategory == null || selectedCategory!.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please select a category'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+
                           final txn = Transaction(
                             id: isEditing ? transactionToEdit.id : null,
                             title: title,
                             amount: amount,
                             isIncome: isIncome,
-                            category: selectedCategory,
+                            category: selectedCategory!,
                             date: selectedDate,
                           );
 

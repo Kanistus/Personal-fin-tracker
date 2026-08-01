@@ -759,7 +759,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   void _showAddBudgetSheet(BuildContext context) {
-    String selectedCategory = _expenseCategories[0];
+    String? selectedCategory;
     final limitController = TextEditingController();
 
     showModalBottomSheet(
@@ -818,6 +818,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedCategory,
+                          hint: const Text(
+                            'Select Category',
+                            style: TextStyle(color: _textSecondary),
+                          ),
                           isExpanded: true,
                           dropdownColor: _cardColor,
                           style: const TextStyle(
@@ -888,6 +892,16 @@ class _BudgetScreenState extends State<BudgetScreen> {
                           elevation: 0,
                         ),
                         onPressed: () {
+                          if (selectedCategory == null || selectedCategory!.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please select a category'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+
                           final limit = double.tryParse(
                               limitController.text.trim());
 
@@ -905,7 +919,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                           }
 
                           final budget = Budget(
-                            category: selectedCategory,
+                            category: selectedCategory!,
                             limit: limit,
                             month: _monthKey,
                           );
