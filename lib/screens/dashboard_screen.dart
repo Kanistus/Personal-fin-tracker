@@ -288,141 +288,133 @@ class DashboardScreen extends StatelessWidget {
         final txn = provider.transactions[index];
         final icon = _categoryIcons[txn.category] ?? Icons.more_horiz_rounded;
 
-        return Dismissible(
-          key: ValueKey(txn.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
+        return GestureDetector(
+          onTap: () => _showTransactionDetailSheet(context, txn, provider),
+          child: Container(
             margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: _expenseColor.withValues(alpha: 0.2),
+              color: _cardColor,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.delete_rounded, color: _expenseColor),
-          ),
-          onDismissed: (_) {
-            provider.deleteTransaction(txn.id!);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Deleted "${txn.title}"'),
-                backgroundColor: _cardColor,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          child: GestureDetector(
-            onTap: () => _showTransactionDetailSheet(context, txn, provider),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: _cardColor,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: (txn.isIncome ? _incomeColor : _expenseColor)
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: txn.isIncome ? _incomeColor : _expenseColor,
-                      size: 22,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (txn.isIncome ? _incomeColor : _expenseColor)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          txn.title,
-                          style: const TextStyle(
-                            color: _textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${txn.category} • ${dateFormat.format(txn.date)}',
-                          style: const TextStyle(
-                            color: _textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: Icon(
+                    icon,
+                    color: txn.isIncome ? _incomeColor : _expenseColor,
+                    size: 22,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${txn.isIncome ? '+' : '-'} ${currencyProvider.symbol}${NumberFormat('#,##0').format(txn.amount)}',
-                        style: TextStyle(
-                          color: txn.isIncome ? _incomeColor : _expenseColor,
+                        txn.title,
+                        style: const TextStyle(
+                          color: _textPrimary,
                           fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${txn.category} • ${dateFormat.format(txn.date)}',
+                        style: const TextStyle(
+                          color: _textSecondary,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 4),
-                  // Direct Edit button
-                  IconButton(
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(6),
-                    icon: const Icon(Icons.edit_outlined, color: _accentColor, size: 20),
-                    tooltip: 'Edit Transaction',
-                    onPressed: () => _showAddTransactionSheet(context, transactionToEdit: txn),
-                  ),
-                  // Direct Delete button
-                  IconButton(
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(6),
-                    icon: const Icon(Icons.delete_outline_rounded, color: _expenseColor, size: 20),
-                    tooltip: 'Delete Transaction',
-                    onPressed: () {
-                      if (txn.id != null) {
-                        provider.deleteTransaction(txn.id!);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    'Deleted "${txn.title}"',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${txn.isIncome ? '+' : '-'} ${currencyProvider.symbol}${NumberFormat('#,##0').format(txn.amount)}',
+                      style: TextStyle(
+                        color: txn.isIncome ? _incomeColor : _expenseColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 4),
+                // Direct Edit button
+                IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(6),
+                  icon: const Icon(Icons.edit_outlined, color: _accentColor, size: 20),
+                  tooltip: 'Edit Transaction',
+                  onPressed: () => _showAddTransactionSheet(context, transactionToEdit: txn),
+                ),
+                // Direct Delete button
+                IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: const EdgeInsets.all(6),
+                  icon: const Icon(Icons.delete_outline_rounded, color: _expenseColor, size: 20),
+                  tooltip: 'Delete Transaction',
+                  onPressed: () {
+                    if (txn.id != null) {
+                      provider.deleteTransaction(txn.id!);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Deleted "${txn.title}"',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
                                   ),
                                 ),
-                              ],
-                            ),
-                            backgroundColor: const Color(0xFFC0392B),
-                            behavior: SnackBarBehavior.floating,
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
+                          action: SnackBarAction(
+                            label: 'UNDO',
+                            textColor: const Color(0xFFF1C40F),
+                            onPressed: () {
+                              provider.addTransaction(
+                                Transaction(
+                                  title: txn.title,
+                                  amount: txn.amount,
+                                  isIncome: txn.isIncome,
+                                  category: txn.category,
+                                  date: txn.date,
+                                ),
+                              );
+                            },
+                          ),
+                          backgroundColor: const Color(0xFFC0392B),
+                          behavior: SnackBarBehavior.floating,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         );
@@ -607,12 +599,28 @@ class DashboardScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
+                                  action: SnackBarAction(
+                                    label: 'UNDO',
+                                    textColor: const Color(0xFFF1C40F),
+                                    onPressed: () {
+                                      provider.addTransaction(
+                                        Transaction(
+                                          title: txn.title,
+                                          amount: txn.amount,
+                                          isIncome: txn.isIncome,
+                                          category: txn.category,
+                                          date: txn.date,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                   backgroundColor: const Color(0xFFC0392B),
                                   behavior: SnackBarBehavior.floating,
                                   elevation: 4,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
+                                  duration: const Duration(seconds: 4),
                                 ),
                               );
                             }

@@ -342,12 +342,30 @@ class _DebtScreenState extends State<DebtScreen>
                 ),
               ],
             ),
+            action: SnackBarAction(
+              label: 'UNDO',
+              textColor: const Color(0xFFF1C40F),
+              onPressed: () {
+                provider.addDebt(
+                  Debt(
+                    personName: debt.personName,
+                    totalAmount: debt.totalAmount,
+                    paidAmount: debt.paidAmount,
+                    isOwedToMe: debt.isOwedToMe,
+                    description: debt.description,
+                    dueDate: debt.dueDate,
+                    createdDate: debt.createdDate,
+                  ),
+                );
+              },
+            ),
             backgroundColor: const Color(0xFFC0392B),
             behavior: SnackBarBehavior.floating,
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            duration: const Duration(seconds: 4),
           ),
         );
       },
@@ -505,12 +523,30 @@ class _DebtScreenState extends State<DebtScreen>
                                 ),
                               ],
                             ),
+                            action: SnackBarAction(
+                              label: 'UNDO',
+                              textColor: const Color(0xFFF1C40F),
+                              onPressed: () {
+                                provider.addDebt(
+                                  Debt(
+                                    personName: debt.personName,
+                                    totalAmount: debt.totalAmount,
+                                    paidAmount: debt.paidAmount,
+                                    isOwedToMe: debt.isOwedToMe,
+                                    description: debt.description,
+                                    dueDate: debt.dueDate,
+                                    createdDate: debt.createdDate,
+                                  ),
+                                );
+                              },
+                            ),
                             backgroundColor: const Color(0xFFC0392B),
                             behavior: SnackBarBehavior.floating,
                             elevation: 4,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            duration: const Duration(seconds: 4),
                           ),
                         );
                       }
@@ -796,12 +832,30 @@ class _DebtScreenState extends State<DebtScreen>
                                     ),
                                   ],
                                 ),
+                                action: SnackBarAction(
+                                  label: 'UNDO',
+                                  textColor: const Color(0xFFF1C40F),
+                                  onPressed: () {
+                                    provider.addDebt(
+                                      Debt(
+                                        personName: debt.personName,
+                                        totalAmount: debt.totalAmount,
+                                        paidAmount: debt.paidAmount,
+                                        isOwedToMe: debt.isOwedToMe,
+                                        description: debt.description,
+                                        dueDate: debt.dueDate,
+                                        createdDate: debt.createdDate,
+                                      ),
+                                    );
+                                  },
+                                ),
                                 backgroundColor: const Color(0xFFC0392B),
                                 behavior: SnackBarBehavior.floating,
                                 elevation: 4,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                duration: const Duration(seconds: 4),
                               ),
                             );
                           }

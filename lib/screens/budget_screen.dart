@@ -529,12 +529,26 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ),
               ],
             ),
+            action: SnackBarAction(
+              label: 'UNDO',
+              textColor: const Color(0xFFF1C40F),
+              onPressed: () {
+                provider.addBudget(
+                  Budget(
+                    category: budget.category,
+                    limit: budget.limit,
+                    month: budget.month,
+                  ),
+                );
+              },
+            ),
             backgroundColor: const Color(0xFFC0392B),
             behavior: SnackBarBehavior.floating,
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            duration: const Duration(seconds: 4),
           ),
         );
       },
@@ -687,7 +701,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
                       onPressed: () {
                         Navigator.of(ctx).pop();
                         if (budget.id != null) {
-                          Provider.of<BudgetProvider>(context, listen: false).deleteBudget(budget.id!);
+                          final budgetProvider = Provider.of<BudgetProvider>(context, listen: false);
+                          budgetProvider.deleteBudget(budget.id!);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Row(
@@ -706,12 +721,26 @@ class _BudgetScreenState extends State<BudgetScreen> {
                                   ),
                                 ],
                               ),
+                              action: SnackBarAction(
+                                label: 'UNDO',
+                                textColor: const Color(0xFFF1C40F),
+                                onPressed: () {
+                                  budgetProvider.addBudget(
+                                    Budget(
+                                      category: budget.category,
+                                      limit: budget.limit,
+                                      month: budget.month,
+                                    ),
+                                  );
+                                },
+                              ),
                               backgroundColor: const Color(0xFFC0392B),
                               behavior: SnackBarBehavior.floating,
                               elevation: 4,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
+                              duration: const Duration(seconds: 4),
                             ),
                           );
                         }
