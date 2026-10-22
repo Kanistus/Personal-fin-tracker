@@ -4,9 +4,13 @@ import '../providers/transaction_provider.dart';
 import '../providers/budget_provider.dart';
 import '../providers/debt_provider.dart';
 import '../providers/currency_provider.dart';
+import '../providers/auto_tracking_provider.dart';
 import '../models/currency_model.dart';
 import '../services/csv_exporter.dart';
 import '../services/excel_exporter.dart';
+import 'review_screen.dart';
+import 'auto_settings_screen.dart';
+import 'statement_import_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -21,6 +25,7 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyProvider = Provider.of<CurrencyProvider>(context);
+    final autoProvider = Provider.of<AutoTrackingProvider>(context);
     final currentCurrency = currencyProvider.currency;
 
     return Scaffold(
@@ -38,11 +43,76 @@ class MoreScreen extends StatelessWidget {
         ),
         centerTitle: false,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Auto Tracking Section
+            const Text(
+              'Automatic Expense Detection',
+              style: TextStyle(
+                color: _textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Review detected expenses card
+            _buildOptionCard(
+              icon: Icons.rate_review_rounded,
+              title: 'Review Detected Expenses',
+              subtitle: autoProvider.pendingCount > 0
+                  ? '${autoProvider.pendingCount} transaction(s) waiting for your review'
+                  : 'All detected transactions reviewed',
+              accentColor: autoProvider.pendingCount > 0
+                  ? const Color(0xFFF39C12)
+                  : const Color(0xFF2ECC71),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReviewScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // Auto tracking settings card
+            _buildOptionCard(
+              icon: Icons.notifications_active_rounded,
+              title: 'Auto-Tracking Settings',
+              subtitle: autoProvider.isNotificationAccessGranted
+                  ? 'Active • Monitoring Google Pay, UPI & Banks'
+                  : 'Action needed: Grant notification permission',
+              accentColor: autoProvider.isNotificationAccessGranted
+                  ? _accentColor
+                  : const Color(0xFFE74C3C),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AutoSettingsScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // Import Bank Statement
+            _buildOptionCard(
+              icon: Icons.upload_file_rounded,
+              title: 'Import Bank Statement',
+              subtitle: 'Upload CSV statement from bank or payment app',
+              accentColor: const Color(0xFF9B59B6),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StatementImportScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
             // Settings section header
             const Text(
               'Settings',
@@ -106,19 +176,19 @@ class MoreScreen extends StatelessWidget {
               onTap: () => _exportFullReport(context),
             ),
 
-            const Spacer(),
+            const SizedBox(height: 30),
 
             // App info
             Center(
               child: Column(
                 children: const [
                   Text(
-                    'Personal Finance Tracker',
-                    style: TextStyle(color: _textSecondary, fontSize: 14),
+                    'Finance Vault',
+                    style: TextStyle(color: _textSecondary, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Version 1.3.0',
+                    'Version 2.0.0 • Offline & Privacy-First',
                     style: TextStyle(color: _textSecondary, fontSize: 12),
                   ),
                 ],

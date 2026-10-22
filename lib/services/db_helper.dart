@@ -4,6 +4,9 @@ import '../models/transaction.dart';
 import '../models/budget.dart';
 import '../models/debt.dart';
 import '../models/debt_settlement.dart';
+import '../models/auto_transaction.dart';
+import '../models/merchant_rule.dart';
+import '../models/tracking_setting.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._internal();
@@ -24,7 +27,7 @@ class DbHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE transactions(
@@ -66,6 +69,7 @@ class DbHelper {
             note TEXT
           )
         ''');
+        await _createAutoTrackingTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -104,8 +108,53 @@ class DbHelper {
             )
           ''');
         }
+        if (oldVersion < 5) {
+          await _createAutoTrackingTables(db);
+        }
       },
     );
+  }
+
+  static Future<void> _createAutoTrackingTables(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE auto_transactions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        amount REAL NOT NULL,
+        merchant TEXT NOT NULL,
+        rawNotification TEXT,
+        sourceApp TEXT NOT NULL,
+        transactionType TEXT NOT NULL DEFAULT 'expense',
+        category TEXT NOT NULL DEFAULT 'Other',
+        confidence TEXT NOT NULL DEFAULT 'low',
+        status TEXT NOT NULL DEFAULT 'pending_review',
+        upiRef TEXT,
+        date TEXT NOT NULL,
+        linkedTransactionId INTEGER,
+        duplicateGroupId TEXT,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE merchant_rules(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        merchantPattern TEXT NOT NULL UNIQUE,
+        category TEXT NOT NULL,
+        transactionType TEXT NOT NULL DEFAULT 'expense',
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE tracking_settings(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        packageName TEXT NOT NULL UNIQUE,
+        appName TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        addedAt TEXT NOT NULL
+      )
+    ''');
   }
 
   // --- Transactions ---
@@ -235,5 +284,123 @@ class DbHelper {
     final db = await database;
     final maps = await db.query('debt_settlements', orderBy: 'date DESC');
     return maps.map((map) => DebtSettlement.fromMap(map)).toList();
+  }
+
+  // --- Auto Transactions ---
+
+  Future<int> insertAutoTransaction(AutoTransaction txn) async {
+    final db = await database;
+    return await db.insert('auto_transactions', txn.toMap());
+  }
+
+  Future<List<AutoTransaction>> getAutoTransactions({String? status}) async {
+    final db = await database;
+    final maps = await db.query(
+      'auto_transactions',
+      where: status != null ? 'status = ?' : null,
+      whereArgs: status != null ? [status] : null,
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => AutoTransaction.fromMap(map)).toList();
+  }
+
+  Future<List<AutoTransaction>> getPendingAutoTransactions() async {
+    final db = await database;
+    final maps = await db.query(
+      'auto_transactions',
+      where: 'status = ?',
+      whereArgs: ['pending_review'],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => AutoTransaction.fromMap(map)).toList();
+  }
+
+  Future<int> updateAutoTransaction(AutoTransaction txn) async {
+    final db = await database;
+    return await db.update(
+      'auto_transactions',
+      txn.toMap(),
+      where: 'id = ?',
+      whereArgs: [txn.id],
+    );
+  }
+
+  Future<int> deleteAutoTransaction(int id) async {
+    final db = await database;
+    return await db.delete('auto_transactions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> clearAllAutoTransactions() async {
+    final db = await database;
+    return await db.delete('auto_transactions');
+  }
+
+  // --- Merchant Rules ---
+
+  Future<int> insertMerchantRule(MerchantRule rule) async {
+    final db = await database;
+    return await db.insert(
+      'merchant_rules',
+      rule.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<MerchantRule>> getMerchantRules() async {
+    final db = await database;
+    final maps = await db.query('merchant_rules', orderBy: 'merchantPattern ASC');
+    return maps.map((map) => MerchantRule.fromMap(map)).toList();
+  }
+
+  Future<MerchantRule?> findMerchantRule(String pattern) async {
+    final db = await database;
+    final maps = await db.query(
+      'merchant_rules',
+      where: 'merchantPattern = ?',
+      whereArgs: [pattern],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return MerchantRule.fromMap(maps.first);
+  }
+
+  Future<int> deleteMerchantRule(int id) async {
+    final db = await database;
+    return await db.delete('merchant_rules', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Tracking Settings ---
+
+  Future<int> insertTrackingSetting(TrackingSetting setting) async {
+    final db = await database;
+    return await db.insert(
+      'tracking_settings',
+      setting.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<TrackingSetting>> getTrackingSettings() async {
+    final db = await database;
+    final maps = await db.query('tracking_settings', orderBy: 'appName ASC');
+    if (maps.isEmpty) {
+      // Initialize with default apps
+      for (final app in TrackingSetting.getDefaultApps()) {
+        await insertTrackingSetting(app);
+      }
+      final newMaps = await db.query('tracking_settings', orderBy: 'appName ASC');
+      return newMaps.map((map) => TrackingSetting.fromMap(map)).toList();
+    }
+    return maps.map((map) => TrackingSetting.fromMap(map)).toList();
+  }
+
+  Future<int> updateTrackingSetting(TrackingSetting setting) async {
+    final db = await database;
+    return await db.update(
+      'tracking_settings',
+      setting.toMap(),
+      where: 'id = ?',
+      whereArgs: [setting.id],
+    );
   }
 }

@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/currency_provider.dart';
+import '../providers/auto_tracking_provider.dart';
+import 'review_screen.dart';
+import 'auto_settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -89,8 +92,14 @@ class DashboardScreen extends StatelessWidget {
             children: [
               // Summary cards
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: _buildSummaryCards(context, provider),
+              ),
+
+              // Auto-tracking unreviewed notification / permission card
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _buildAutoTrackingCard(context),
               ),
 
               // Transactions header
@@ -251,6 +260,96 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAutoTrackingCard(BuildContext context) {
+    final autoProvider = Provider.of<AutoTrackingProvider>(context);
+
+    if (!autoProvider.isNotificationAccessGranted) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AutoSettingsScreen()),
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF39C12).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFF39C12).withValues(alpha: 0.3)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Color(0xFFF39C12), size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Enable Notification Access to auto-detect payments',
+                  style: TextStyle(color: Color(0xFFECF0F1), fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: Color(0xFFF39C12), size: 20),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (autoProvider.pendingCount > 0) {
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReviewScreen()),
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2C3E50), Color(0xFF34495E)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF3498DB).withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF39C12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${autoProvider.pendingCount} Detected Expense(s)',
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const Text(
+                      'Tap to review and add to expenses',
+                      style: TextStyle(color: Color(0xFF8899AA), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF3498DB), size: 14),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildEmptyState() {

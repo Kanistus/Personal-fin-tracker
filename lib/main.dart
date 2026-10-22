@@ -4,6 +4,7 @@ import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/debt_provider.dart';
 import 'providers/currency_provider.dart';
+import 'providers/auto_tracking_provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/budget_screen.dart';
 import 'screens/spending_screen.dart';
@@ -34,9 +35,17 @@ class PersonalFinApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => CurrencyProvider()..loadCurrency(),
         ),
+        ChangeNotifierProvider(
+          create: (ctx) {
+            final autoProvider = AutoTrackingProvider();
+            final txnProvider = Provider.of<TransactionProvider>(ctx, listen: false);
+            autoProvider.initialize(txnProvider);
+            return autoProvider;
+          },
+        ),
       ],
       child: MaterialApp(
-        title: 'Fintracker',
+        title: 'Finance Vault',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
