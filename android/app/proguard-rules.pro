@@ -16,6 +16,12 @@
 # Keep path_provider
 -keep class io.flutter.plugins.pathprovider.** { *; }
 
+# Keep app classes
+-keep class com.personalfin.personal_fin.** { *; }
+
+# Keep file_picker
+-keep class com.mr.flutter.plugin.filepicker.** { *; }
+
 # General Android rules
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
