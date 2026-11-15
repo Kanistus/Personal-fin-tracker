@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
+import '../models/auto_transaction.dart';
 import '../services/db_helper.dart';
 
 class TransactionProvider extends ChangeNotifier {
@@ -33,6 +34,53 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> addTransaction(Transaction txn) async {
     await _dbHelper.insertTransaction(txn);
     await loadTransactions();
+  }
+
+  /// Automatically logs an auto-detected SMS transaction if it is not a duplicate.
+  /// Returns the saved [Transaction], or null if it was detected as a duplicate.
+  Future<Transaction?> processAndAddAutoTransaction(AutoTransaction auto) async {
+    final isIncome =
+        auto.transactionType == 'income' || auto.transactionType == 'refund';
+
+    // Duplicate check: within 48h, exact same amount, matching transaction type
+    final isDuplicate = _transactions.any((t) {
+      if (t.amount != auto.amount) return false;
+      if (t.isIncome != isIncome) return false;
+      final hoursDiff = t.date.difference(auto.date).inHours.abs();
+      if (hoursDiff > 48) return false;
+
+      final tTitle = t.title.toLowerCase().trim();
+      final aMerchant = auto.merchant.toLowerCase().trim();
+      if (tTitle.isEmpty || aMerchant.isEmpty) return true;
+      return tTitle.contains(aMerchant) || aMerchant.contains(tTitle);
+    });
+
+    if (isDuplicate) {
+      return null;
+    }
+
+    final title = auto.merchant.isNotEmpty
+        ? auto.merchant
+        : (isIncome ? 'Bank Credit' : 'Bank Expense');
+
+    final txn = Transaction(
+      title: title,
+      amount: auto.amount,
+      isIncome: isIncome,
+      category: auto.category.isNotEmpty ? auto.category : 'Other',
+      date: auto.date,
+    );
+
+    final id = await _dbHelper.insertTransaction(txn);
+    await loadTransactions();
+    return Transaction(
+      id: id,
+      title: txn.title,
+      amount: txn.amount,
+      isIncome: txn.isIncome,
+      category: txn.category,
+      date: txn.date,
+    );
   }
 
   Future<void> updateTransaction(Transaction txn) async {

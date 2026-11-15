@@ -7,6 +7,7 @@ import '../providers/currency_provider.dart';
 import '../models/currency_model.dart';
 import '../services/csv_exporter.dart';
 import '../services/excel_exporter.dart';
+import '../services/sms_bridge.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -62,6 +63,16 @@ class MoreScreen extends StatelessWidget {
               subtitle: '${currentCurrency.flag}  ${currentCurrency.name} (${currentCurrency.symbol})',
               accentColor: const Color(0xFFE67E22),
               onTap: () => _showCurrencyPicker(context),
+            ),
+            const SizedBox(height: 10),
+
+            // SMS Auto-Tracking card
+            _buildOptionCard(
+              icon: Icons.sms_rounded,
+              title: 'SMS Expense Tracking',
+              subtitle: 'Auto-detect expenses from bank SMS (100% Offline)',
+              accentColor: const Color(0xFF2ECC71),
+              onTap: () => _handleSmsPermission(context),
             ),
             const SizedBox(height: 20),
 
@@ -472,6 +483,74 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
+  void _handleSmsPermission(BuildContext context) async {
+    final isGranted = await SmsBridge.isSmsPermissionGranted();
+    if (!context.mounted) return;
+
+    if (isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Color(0xFF2ECC71), size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'SMS Auto-Tracking is ACTIVE! Bank transaction messages are detected automatically.',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xFF1A2940),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      final requested = await SmsBridge.requestSmsPermission();
+      if (!context.mounted) return;
+      if (requested) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Color(0xFF2ECC71), size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'SMS Permission Granted! Bank expense tracking is now active.',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color(0xFF1A2940),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: Color(0xFFF1C40F), size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'SMS permission is required. You can enable it in phone Settings -> Apps -> Fintracker -> Permissions -> SMS.',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color(0xFF1A2940),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -482,7 +561,11 @@ class MoreScreen extends StatelessWidget {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
